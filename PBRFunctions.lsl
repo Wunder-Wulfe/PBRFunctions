@@ -25,34 +25,151 @@
         - 
 */
 
+#define IS_EMPTY_VALUE(lst, index) ( llList2String(( lst ), ( index )) == "" )
+
+#define LIST_REPLACE(lst, val, index) ( llListReplaceList(( lst ), (list)( val ), ( index ), ( index )) )
+
+#define SET_LINK_GLTF(link, param, face, payload) llSetLinkPrimitiveParamsFast(( link ), [( param ), ( face )] + ( payload ))
+#define GET_LINK_GLTF(link, param, face) llGetLinkPrimitiveParams(( link ), [( param ), ( face )])
+
+list DefaultAssignGLTFBase(list result, integer USE_TEXTURE)
+{
+    if (!USE_TEXTURE)
+        result = LIST_REPLACE(result, "", 0);
+    
+    // vector repeats
+    if (IS_EMPTY_VALUE(result, 1))
+        result = LIST_REPLACE(result, <1.0, 1.0, 0.0>, 1);
+    
+    // vector offsets
+    if (IS_EMPTY_VALUE(result, 2))
+        result = LIST_REPLACE(result, <0.0, 0.0, 0.0>, 2);
+    
+    // float rotation_in_radians
+    if (IS_EMPTY_VALUE(result, 3))
+        result = LIST_REPLACE(result, 0.0, 3);
+    
+    // vector linear_color
+    if (IS_EMPTY_VALUE(result, 4))
+        result = LIST_REPLACE(result, <1.0, 1.0, 1.0>, 4);
+    
+    // float alpha
+    if (IS_EMPTY_VALUE(result, 5))
+        result = LIST_REPLACE(result, 1.0, 5);
+    
+    // integer gltf_alpha_mode
+    if (IS_EMPTY_VALUE(result, 6))
+        result = LIST_REPLACE(result, PRIM_ALPHA_MODE_NONE, 6);
+    
+    // float alpha_mask_cutoff
+    if (IS_EMPTY_VALUE(result, 7))
+        result = LIST_REPLACE(result, 0.5, 7);
+    
+    // integer doublesided
+    if (IS_EMPTY_VALUE(result, 8))
+        result = LIST_REPLACE(result, FALSE, 8);
+    
+    return result;
+}
+
+list DefaultAssignGLTFNormal(list result, integer USE_TEXTURE)
+{
+    if (!USE_TEXTURE)
+        result = LIST_REPLACE(result, "", 0);
+    
+    // vector repeats
+    if (IS_EMPTY_VALUE(result, 1))
+        result = LIST_REPLACE(result, <1.0, 1.0, 0.0>, 1);
+    
+    // vector offsets
+    if (IS_EMPTY_VALUE(result, 2))
+        result = LIST_REPLACE(result, <0.0, 0.0, 0.0>, 2);
+    
+    // float rotation_in_radians
+    if (IS_EMPTY_VALUE(result, 3))
+        result = LIST_REPLACE(result, 0.0, 3);
+    
+    return result;
+}
+
+list DefaultAssignGLTFMetallicRough(list result, integer USE_TEXTURE)
+{
+    if (!USE_TEXTURE)
+        result = LIST_REPLACE(result, "", 0);
+    
+    // vector repeats
+    if (IS_EMPTY_VALUE(result, 1))
+        result = LIST_REPLACE(result, <1.0, 1.0, 0.0>, 1);
+    
+    // vector offsets
+    if (IS_EMPTY_VALUE(result, 2))
+        result = LIST_REPLACE(result, <0.0, 0.0, 0.0>, 2);
+    
+    // float rotation_in_radians
+    if (IS_EMPTY_VALUE(result, 3))
+        result = LIST_REPLACE(result, 0.0, 3);
+        
+    // float metallic_factor
+    if (IS_EMPTY_VALUE(result, 4))
+        result = LIST_REPLACE(result, 1.0, 4);
+        
+    // float roughness_factor
+    if (IS_EMPTY_VALUE(result, 5))
+        result = LIST_REPLACE(result, 1.0, 5);
+    
+    return result;
+}
+
+list DefaultAssignGLTFEmissive(list result, integer USE_TEXTURE)
+{
+    if (!USE_TEXTURE)
+        result = LIST_REPLACE(result, "", 0);
+    
+    // vector repeats
+    if (IS_EMPTY_VALUE(result, 1))
+        result = LIST_REPLACE(result, <1.0, 1.0, 0.0>, 1);
+    
+    // vector offsets
+    if (IS_EMPTY_VALUE(result, 2))
+        result = LIST_REPLACE(result, <0.0, 0.0, 0.0>, 2);
+    
+    // float rotation_in_radians
+    if (IS_EMPTY_VALUE(result, 3))
+        result = LIST_REPLACE(result, 0.0, 3);
+        
+    // vector emissive_tint
+    if (IS_EMPTY_VALUE(result, 4))
+        result = LIST_REPLACE(result, <1.0, 1.0, 1.0>, 4);
+        
+    return result;
+}
 
 // llGetLinkAlpha for PBR materials
 float GetLinkPBRAlpha(integer link, integer side)
 {
-    return llList2Float(
-        llGetLinkPrimitiveParams(
-            link, 
-            [PRIM_GLTF_BASE_COLOR, side]
-        ),
-        5
-    );
+    list details = GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side);
+    
+    if (IS_EMPTY_VALUE(details, 5))
+        return 1.0;
+    else
+        return llList2Float(details, 5);
 }
 
 // llSetLinkAlpha for PBR Materials
 SetLinkPBRAlpha(integer link, integer side, float alpha)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_BASE_COLOR, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_BASE_COLOR, side]
-                ),
-                [alpha],
-                5,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_BASE_COLOR,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side),
+                alpha,
                 5
-            )
+            ),
+            FALSE
+        )
     );
 }
 
@@ -60,18 +177,18 @@ SetLinkPBRAlpha(integer link, integer side, float alpha)
 // Valid alpha_modes: PRIM_GLTF_ALPHA_MODE_NONE, PRIM_GLTF_ALPHA_MODE_BLEND, PRIM_GLTF_ALPHA_MODE_MASK
 SetLinkPBRAlphaAdv(integer link, integer side, float alpha, integer alpha_mode, float alpha_cutoff)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_BASE_COLOR, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_BASE_COLOR, side]
-                ),
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_BASE_COLOR,
+        side,
+        DefaultAssignGLTFBase(
+            llListReplaceList(
+                GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side),
                 [alpha, alpha_mode, alpha_cutoff],
-                5,
-                7
-            )
+                5, 7
+            ),
+            FALSE
+        )
     );
 }
 
@@ -80,10 +197,7 @@ SetLinkPBRAlphaAdv(integer link, integer side, float alpha, integer alpha_mode, 
 string GetLinkPBRMaterial(integer link, integer side)
 {
     llList2String(
-        llGetLinkPrimitiveParams(
-            link,  
-            [PRIM_RENDER_MATERIAL, side]
-        ),
+        GET_LINK_GLTF(link, PRIM_RENDER_MATERIAL, side),
         0
     );
 }
@@ -101,62 +215,58 @@ SetLinkPBRMaterial(integer link, integer side, string material)
 // llGetLinkColor for PBR Materials
 vector GetLinkPBRBaseTintLinear(integer link, integer side)
 {
-    return llList2Vector(
-        llGetLinkPrimitiveParams(
-            link, 
-            [PRIM_GLTF_BASE_COLOR, side]
-        ),
-        4
-    );
+    list details = GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side);
+    
+    if (IS_EMPTY_VALUE(details, 4))
+        return <1.0, 1.0, 1.0>;
+    else
+        return llList2Vector(details, 4);
 }
 
 // llGetLinkColor for PBR Materials (in sRGB space)
 vector GetLinkPBRBaseTint(integer link, integer side)
 {
-    return llLinear2sRGB(
-        llList2Vector(
-            llGetLinkPrimitiveParams(
-                link, 
-                [PRIM_GLTF_BASE_COLOR, side]
-            ),
-            4
-        )
-    );
+    list details = GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side);
+    
+    if (IS_EMPTY_VALUE(details, 4))
+        return <1.0, 1.0, 1.0>;
+    else
+        return llLinear2sRGB(llList2Vector(details, 4));
 }
 
 // llSetLinkColor for PBR materials
 SetLinkPBRBaseTintLinear(integer link, integer side, vector tint)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_BASE_COLOR, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_BASE_COLOR, side]
-                ),
-                [tint],
-                4,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_BASE_COLOR,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side),
+                tint,
                 4
-            )
+            ),
+            FALSE
+        )
     );
 }
 
 // llSetLinkColor for PBR Materials (in sRGB space)
 SetLinkPBRBaseTint(integer link, integer side, vector tint)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_BASE_COLOR, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_BASE_COLOR, side]
-                ),
-                [llsRGB2Linear(tint)],
-                4,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_BASE_COLOR,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side),
+                llsRGB2Linear(tint),
                 4
-            )
+            ),
+            FALSE
+        )
     );
 }
 
@@ -164,10 +274,7 @@ SetLinkPBRBaseTint(integer link, integer side, vector tint)
 integer GetLinkPBRDoubleSided(integer link, integer side)
 {
     return llList2Integer(
-        llGetLinkPrimitiveParams(
-            link, 
-            [PRIM_GLTF_BASE_COLOR, side]
-        ),
+        GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side),
         8
     );
 }
@@ -175,265 +282,277 @@ integer GetLinkPBRDoubleSided(integer link, integer side)
 // Set if the material uses Double Sided rendering mode
 SetLinkPBRDoubleSided(integer link, integer side, integer double_sided)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_BASE_COLOR, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_BASE_COLOR, side]
-                ),
-                [double_sided],
-                8,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_BASE_COLOR,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side),
+                double_sided,
                 8
-            )
+            ),
+            FALSE
+        )
     );
 }
 
 // llSetLinkTexture for PBR materials
 SetLinkPBRBaseTexture(integer link, integer side, string tex)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_BASE_COLOR, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_BASE_COLOR, side]
-                ),
-                [tex],
-                0,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_BASE_COLOR,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side),
+                tex,
                 0
-            )
+            ),
+            TRUE
+        )
     );
 }
 
 // Advanced version of SetLinkPBRBaseTexture
 SetLinkPBRBaseTextureAdv(integer link, integer side, string tex, vector repeats, vector offsets, float rotation_in_radians)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_BASE_COLOR, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_BASE_COLOR, side]
-                ),
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_BASE_COLOR,
+        side,
+        DefaultAssignGLTFBase(
+            llListReplaceList(
+                GET_LINK_GLTF(link, PRIM_GLTF_BASE_COLOR, side),
                 [tex, repeats, offsets, rotation_in_radians],
-                0,
-                3
-            )
+                0, 3
+            ),
+            TRUE
+        )
     );
 }
 
 // Set the PBR Normal Map texture
 SetLinkPBRNormalTexture(integer link, integer side, string tex)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_NORMAL, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_NORMAL, side]
-                ),
-                [tex],
-                0,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_NORMAL,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_NORMAL, side),
+                tex,
                 0
-            )
+            ),
+            TRUE
+        )
     );
 }
 
 // Advanced version of SetLinkPBRNormalTexture
 SetLinkPBRNormalTextureAdv(integer link, integer side, string tex, vector repeats, vector offsets, float rotation_in_radians)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_NORMAL, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_NORMAL, side]
-                ),
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_NORMAL,
+        side,
+        DefaultAssignGLTFBase(
+            llListReplaceList(
+                GET_LINK_GLTF(link, PRIM_GLTF_NORMAL, side),
                 [tex, repeats, offsets, rotation_in_radians],
-                0,
-                3
-            )
+                0, 3
+            ),
+            TRUE
+        )
     );
 }
 
 // Set the PBR Metallic Roughness texture
 SetLinkPBRMetallicTexture(integer link, integer side, string tex)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_METALLIC_ROUGHNESS, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_METALLIC_ROUGHNESS, side]
-                ),
-                [tex],
-                0,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_METALLIC_ROUGHNESS,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_METALLIC_ROUGHNESS, side),
+                tex,
                 0
-            )
+            ),
+            TRUE
+        )
     );
 }
 
 // Advanced version of SetLinkPBRMetallicTexture
 SetLinkPBRMetallicTextureAdv(integer link, integer side, string tex, vector repeats, vector offsets, float rotation_in_radians)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_METALLIC_ROUGHNESS, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_METALLIC_ROUGHNESS, side]
-                ),
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_METALLIC_ROUGHNESS,
+        side,
+        DefaultAssignGLTFBase(
+            llListReplaceList(
+                GET_LINK_GLTF(link, PRIM_GLTF_METALLIC_ROUGHNESS, side),
                 [tex, repeats, offsets, rotation_in_radians],
-                0,
-                3
-            )
+                0, 3
+            ),
+            TRUE
+        )
     );
 }
 
 // Get the Metallic factor of the PBR material
 float GetLinkPBRMetallic(integer link, integer side)
 {
-    return llList2Float(
-        llGetLinkPrimitiveParams(
-            link, 
-            [PRIM_GLTF_METALLIC_ROUGHNESS, side]
-        ),
-        4
-    );
+    list details = GET_LINK_GLTF(link, PRIM_GLTF_METALLIC_ROUGHNESS, side);
+    
+    if (IS_EMPTY_VALUE(details, 4))
+        return 1.0;
+    else
+        return llList2Float(details, 4);
 }
 
 // Set the Metallic factor of the PBR material
 SetLinkPBRMetallic(integer link, integer side, float metalness)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_METALLIC_ROUGHNESS, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_METALLIC_ROUGHNESS, side]
-                ),
-                [metalness],
-                4,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_METALLIC_ROUGHNESS,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_METALLIC_ROUGHNESS, side),
+                metalness,
                 4
-            )
+            ),
+            FALSE
+        )
     );
 }
 
 // Get the Roughness factor of the PBR material
 float GetLinkPBRRoughness(integer link, integer side)
 {
-    return llList2Float(
-        llGetLinkPrimitiveParams(
-            link, 
-            [PRIM_GLTF_METALLIC_ROUGHNESS, side]
-        ),
-        5
-    );
+    list details = GET_LINK_GLTF(link, PRIM_GLTF_METALLIC_ROUGHNESS, side);
+    
+    if (IS_EMPTY_VALUE(details, 5))
+        return 1.0;
+    else
+        return llList2Float(details, 5);
 }
 
 // Set the Roughness factor of the PBR material
 SetLinkPBRRoughness(integer link, integer side, float roughness)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_METALLIC_ROUGHNESS, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_METALLIC_ROUGHNESS, side]
-                ),
-                [roughness],
-                5,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_METALLIC_ROUGHNESS,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_METALLIC_ROUGHNESS, side),
+                roughness,
                 5
-            )
+            ),
+            FALSE
+        )
     );
 }
 
 // Set the Emissive texture of the PBR material
 SetLinkPBREmissiveTexture(integer link, integer side, string tex)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_EMISSIVE, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_EMISSIVE, side]
-                ),
-                [tex],
-                0,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_EMISSIVE,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_EMISSIVE, side),
+                tex,
                 0
-            )
+            ),
+            TRUE
+        )
+    );
+}
+
+// Advanced version of SetLinkPBREmissiveTexture
+SetLinkPBREmissiveTextureAdv(integer link, integer side, string tex, vector repeats, vector offsets, float rotation_in_radians)
+{
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_EMISSIVE,
+        side,
+        DefaultAssignGLTFBase(
+            llListReplaceList(
+                GET_LINK_GLTF(link, PRIM_GLTF_EMISSIVE, side),
+                [tex, repeats, offsets, rotation_in_radians],
+                0, 3
+            ),
+            TRUE
+        )
     );
 }
 
 // Set the Emissive "Tint" of the PBR material
 SetLinkPBREmissiveTintLinear(integer link, integer side, vector tint)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_EMISSIVE, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_EMISSIVE, side]
-                ),
-                [tint],
-                4,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_EMISSIVE,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_EMISSIVE, side),
+                tint,
                 4
-            )
+            ),
+            FALSE
+        )
     );
 }
 
 // Set the Emissive "Tint" of the PBR material (in sRGB space)
 SetLinkPBREmissiveTint(integer link, integer side, vector tint)
 {
-    llSetLinkPrimitiveParamsFast(
-        link,  
-        [PRIM_GLTF_EMISSIVE, side] 
-            + llListReplaceList(
-                llGetLinkPrimitiveParams(
-                    link, 
-                    [PRIM_GLTF_EMISSIVE, side]
-                ),
-                [llsRGB2Linear(tint)],
-                4,
+    SET_LINK_GLTF(
+        link,
+        PRIM_GLTF_EMISSIVE,
+        side,
+        DefaultAssignGLTFBase(
+            LIST_REPLACE(
+                GET_LINK_GLTF(link, PRIM_GLTF_EMISSIVE, side),
+                llsRGB2Linear(tint),
                 4
-            )
+            ),
+            FALSE
+        )
     );
 }
 
 // Get the Emissive "Tint" of the PBR material
 vector GetLinkPBREmissiveTintLinear(integer link, integer side)
 {
-    return llList2Vector(
-        llGetLinkPrimitiveParams(
-            link, 
-            [PRIM_GLTF_EMISSIVE, side]
-        ),
-        4
-    );
+    list details = GET_LINK_GLTF(link, PRIM_GLTF_EMISSIVE, side);
+    
+    if (IS_EMPTY_VALUE(details, 4))
+        return <1.0, 1.0, 1.0>;
+    else
+        return llList2Vector(details, 4);
 }
 
 // Get the Emissive "Tint" of the PBR material (in sRGB space)
 vector GetLinkPBREmissiveTint(integer link, integer side, vector tint)
 {
-    return llLinear2sRGB(
-        llList2Vector(
-            llGetLinkPrimitiveParams(
-                link, 
-                [PRIM_GLTF_EMISSIVE, side]
-            ),
-            4
-        )
-    );
+    list details = GET_LINK_GLTF(link, PRIM_GLTF_EMISSIVE, side);
+    
+    if (IS_EMPTY_VALUE(details, 4))
+        return <1.0, 1.0, 1.0>;
+    else
+        return llLinear2sRGB(llList2Vector(details, 4));
 }
