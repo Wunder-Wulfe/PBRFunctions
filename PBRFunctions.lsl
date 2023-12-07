@@ -16,13 +16,9 @@
         - If providing an empty Texture, it will not clear or overwrite the existing texture in the slot.
             Yes, this means you can still set other properties even if you can't access the texture!
         
-        - All old functions that operate on Blinn-Phong material do not work on PBR materials, you have to use these versions!
-        
         - If using preprocessor, unused functions will be removed on compile.
         
         - Most of the functions should work normally if you just replace original function calls with the provided alternatives.
-        
-        - 
 */
 
 #define IS_EMPTY_VALUE(lst, index) ( llList2String(( lst ), ( index )) == "" )
