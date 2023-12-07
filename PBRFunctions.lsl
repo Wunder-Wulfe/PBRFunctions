@@ -42,7 +42,7 @@ float GetLinkPBRAlpha(integer link, integer side)
 }
 
 // llSetLinkAlpha for PBR Materials
-SetLinkPBRAlpha(integer link, integer side, float alpha)
+SetLinkPBRAlpha(integer link, float alpha, integer side)
 {
     llSetLinkPrimitiveParamsFast(
         link,  
